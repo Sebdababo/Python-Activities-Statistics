@@ -16,6 +16,8 @@ class ActivityTracker:
         self.activities = self.load_activities()
         
         self.create_widgets()
+
+        self.activity_entry.bind('<Return>', self.add_activity)
         
     def create_widgets(self):
         main_frame = ttk.Frame(self.master, padding="10")
