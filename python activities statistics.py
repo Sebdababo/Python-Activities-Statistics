@@ -1,83 +1,128 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import datetime
+from collections import Counter
+import json
 
-class JobTracker:
+class ActivityTracker:
     def __init__(self, master):
         self.master = master
-        self.master.title("Daily Job Tracker")
-        self.master.geometry("600x400")
+        self.master.title("Daily Activity Tracker")
+        self.master.geometry("700x500")
+        self.master.configure(bg='#f0f0f0')
         
-        self.jobs = {}
+        self.activities = self.load_activities()
         
         self.create_widgets()
         
     def create_widgets(self):
-        self.job_entry = tk.Entry(self.master, width=40)
-        self.job_entry.pack(pady=10)
+        main_frame = ttk.Frame(self.master, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.add_button = tk.Button(self.master, text="Add Job", command=self.add_job)
-        self.add_button.pack()
+        entry_frame = ttk.Frame(main_frame)
+        entry_frame.pack(fill=tk.X, pady=10)
         
-        self.job_listbox = tk.Listbox(self.master, width=50)
-        self.job_listbox.pack(pady=10)
+        self.activity_entry = ttk.Entry(entry_frame, width=40, font=('Arial', 12))
+        self.activity_entry.pack(side=tk.LEFT, padx=(0, 10))
         
-        self.stats_button = tk.Button(self.master, text="Show Statistics", command=self.show_statistics)
-        self.stats_button.pack()
+        self.add_button = ttk.Button(entry_frame, text="Add Activity", command=self.add_activity)
+        self.add_button.pack(side=tk.LEFT)
         
-    def add_job(self):
-        job = self.job_entry.get()
-        if job:
+        list_frame = ttk.Frame(main_frame)
+        list_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        self.activity_listbox = tk.Listbox(list_frame, width=50, font=('Arial', 10))
+        self.activity_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.activity_listbox.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.activity_listbox.config(yscrollcommand=scrollbar.set)
+        
+        self.update_activity_list()
+        
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        self.stats_button = ttk.Button(button_frame, text="Show Statistics", command=self.show_statistics)
+        self.stats_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.clear_button = ttk.Button(button_frame, text="Clear All", command=self.clear_activities)
+        self.clear_button.pack(side=tk.LEFT)
+        
+    def add_activity(self, event=None):
+        activity = self.activity_entry.get().strip()
+        if activity:
             date = datetime.date.today().strftime("%Y-%m-%d")
-            if date not in self.jobs:
-                self.jobs[date] = []
-            self.jobs[date].append(job)
-            self.job_listbox.insert(tk.END, f"{date}: {job}")
-            self.job_entry.delete(0, tk.END)
+            self.activities.setdefault(date, []).append(activity)
+            self.update_activity_list()
+            self.activity_entry.delete(0, tk.END)
+            self.save_activities()
         else:
-            messagebox.showwarning("Warning", "Please enter a job.")
-            
+            messagebox.showwarning("Warning", "Please enter an activity.")
+    
+    def update_activity_list(self):
+        self.activity_listbox.delete(0, tk.END)
+        for date, activities in sorted(self.activities.items(), reverse=True):
+            for activity in activities:
+                self.activity_listbox.insert(tk.END, f"{date}: {activity}")
+    
     def show_statistics(self):
-        if not self.jobs:
-            messagebox.showinfo("Info", "No jobs recorded yet.")
+        if not self.activities:
+            messagebox.showinfo("Info", "No activities recorded yet.")
             return
         
         stats_window = tk.Toplevel(self.master)
-        stats_window.title("Job Statistics")
+        stats_window.title("Activity Statistics")
         stats_window.geometry("800x600")
         
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-        dates = list(self.jobs.keys())
-        job_counts = [len(jobs) for jobs in self.jobs.values()]
         
-        ax1.bar(dates, job_counts)
-        ax1.set_title("Jobs per Day")
-        ax1.set_xlabel("Date")
-        ax1.set_ylabel("Number of Jobs")
+        dates = list(self.activities.keys())
+        activity_counts = [len(activities) for activities in self.activities.values()]
+        
+        ax1.bar(dates, activity_counts, color='skyblue')
+        ax1.set_title("Activities per Day", fontsize=14)
+        ax1.set_xlabel("Date", fontsize=12)
+        ax1.set_ylabel("Number of Activities", fontsize=12)
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha="right")
         
-        all_jobs = [job for jobs in self.jobs.values() for job in jobs]
-        job_freq = {}
-        for job in all_jobs:
-            job_freq[job] = job_freq.get(job, 0) + 1
+        all_activities = [activity for activities in self.activities.values() for activity in activities]
+        top_activities = Counter(all_activities).most_common(5)
+        activity_names, activity_counts = zip(*top_activities)
         
-        top_jobs = sorted(job_freq.items(), key=lambda x: x[1], reverse=True)[:5]
-        job_names, job_counts = zip(*top_jobs)
-        
-        ax2.bar(job_names, job_counts)
-        ax2.set_title("Top 5 Most Common Jobs")
-        ax2.set_xlabel("Job")
-        ax2.set_ylabel("Frequency")
+        ax2.bar(activity_names, activity_counts, color='lightgreen')
+        ax2.set_title("Top 5 Most Common Activities", fontsize=14)
+        ax2.set_xlabel("Activity", fontsize=12)
+        ax2.set_ylabel("Frequency", fontsize=12)
         plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha="right")
         
         plt.tight_layout()
         
         canvas = FigureCanvasTkAgg(fig, master=stats_window)
         canvas.draw()
-        canvas.get_tk_widget().pack()
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill=tk.BOTH, expand=True)
+    
+    def clear_activities(self):
+        if messagebox.askyesno("Confirm", "Are you sure you want to clear all activities?"):
+            self.activities.clear()
+            self.update_activity_list()
+            self.save_activities()
+    
+    def save_activities(self):
+        with open('activities.json', 'w') as f:
+            json.dump(self.activities, f)
+    
+    def load_activities(self):
+        try:
+            with open('activities.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
 
-root = tk.Tk()
-app = JobTracker(root)
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ActivityTracker(root)
+    root.mainloop()
