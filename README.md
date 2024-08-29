@@ -42,3 +42,9 @@ This application is a comprehensive tool for tracking daily activities and manag
 - `activity_tracker.py`: The main application script.
 - `activities.json`: JSON file to store activity data.
 - `todo.json`: JSON file to store to-do list data.
+
+## Example Usage
+
+![Activity Tracker output 1](https://github.com/user-attachments/assets/cdf4bff5-bb9e-4289-9447-f5368a39a72f)
+![Activity Tracker output 2](https://github.com/user-attachments/assets/7fc765a7-a833-40e7-851e-81ae25dfe693)
+![Activity Tracker output 3](https://github.com/user-attachments/assets/3dcf8bab-2c4e-4d06-9ea9-b6cf34a4e576)
