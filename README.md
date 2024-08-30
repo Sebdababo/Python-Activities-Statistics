@@ -30,7 +30,7 @@ This application is a comprehensive tool for tracking daily activities and manag
 2. Clone the repository or download the script.
 3. Install the required packages:
     ```
-    pip install matplotlib
+    pip install -r requirements.txt
     ```
 4. Run the script using Python:
     ```
